@@ -52,17 +52,21 @@ export default function ClassesPage() {
   // 학급 목록 가져오기
   const fetchClasses = async () => {
     try {
-      const { data, error } = await supabase
-        .from('classes')
-        .select(`
-          *,
-          class_members(count)
-        `)
-        .eq('teacher_id', user?.id)
-        .order('created_at', { ascending: false })
+      const response = await fetch('/api/classes', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-      if (error) {
-        console.error('학급 조회 오류:', error)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.error) {
+        console.error('학급 조회 오류:', result.error)
         toast({
           title: '오류',
           description: '학급 목록을 불러오는데 실패했습니다.',
@@ -71,17 +75,14 @@ export default function ClassesPage() {
         return
       }
 
-      // 학생 수 계산
-      const classesWithCount = data.map(cls => ({
-        ...cls,
-        _count: {
-          students: cls.class_members?.length || 0
-        }
-      }))
-
-      setClasses(classesWithCount)
+      setClasses(result.classes || [])
     } catch (error) {
       console.error('학급 조회 실패:', error)
+      toast({
+        title: '오류',
+        description: '학급 목록을 불러오는데 실패했습니다.',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
     }
@@ -90,38 +91,25 @@ export default function ClassesPage() {
   // 학급별 학생 목록 가져오기
   const fetchStudents = async (classId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('class_members')
-        .select(`
-          joined_at,
-          users (
-            id,
-            name,
-            email
-          )
-        `)
-        .eq('class_id', classId)
-        .eq('role', 'student')
+      const response = await fetch(`/api/classes/${classId}/students`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-      if (error || !data) {
-        console.error('학생 목록 조회 오류:', error)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.error) {
+        console.error('학생 목록 조회 오류:', result.error)
         return
       }
 
-      const studentList = data
-        .filter(member => member.users) 
-        .map(member => {
-          const user = Array.isArray(member.users) ? member.users[0] : member.users
-          return {
-            id: user?.id,
-            name: user?.name,
-            email: user?.email,
-            joined_at: member.joined_at
-          }
-        })
-        .filter(student => student.id) // id가 있는 학생만 포함
-
-      setStudents(studentList)
+      setStudents(result.students || [])
     } catch (error) {
       console.error('학생 목록 조회 실패:', error)
     }
@@ -139,26 +127,27 @@ export default function ClassesPage() {
     }
 
     try {
-      // 고유한 클래스 코드 생성
-      const classCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+      const response = await fetch('/api/classes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newClass.name,
+          description: newClass.description,
+          grade: newClass.grade,
+          subject: newClass.subject
+        })
+      })
 
-      const { data, error } = await supabase
-        .from('classes')
-        .insert([
-          {
-            name: newClass.name,
-            description: newClass.description,
-            grade: newClass.grade,
-            subject: newClass.subject,
-            teacher_id: user?.id,
-            class_code: classCode
-          }
-        ])
-        .select()
-        .single()
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
-      if (error) {
-        console.error('학급 생성 오류:', error)
+      const result = await response.json()
+
+      if (result.error) {
+        console.error('학급 생성 오류:', result.error)
         toast({
           title: '오류',
           description: '학급 생성에 실패했습니다.',
@@ -194,13 +183,21 @@ export default function ClassesPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('classes')
-        .delete()
-        .eq('id', classId)
+      const response = await fetch(`/api/classes?id=${classId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-      if (error) {
-        console.error('학급 삭제 오류:', error)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.error) {
+        console.error('학급 삭제 오류:', result.error)
         toast({
           title: '오류',
           description: '학급 삭제에 실패했습니다.',
@@ -217,6 +214,11 @@ export default function ClassesPage() {
       fetchClasses()
     } catch (error) {
       console.error('학급 삭제 실패:', error)
+      toast({
+        title: '오류',
+        description: '학급 삭제 중 오류가 발생했습니다.',
+        variant: 'destructive'
+      })
     }
   }
 
