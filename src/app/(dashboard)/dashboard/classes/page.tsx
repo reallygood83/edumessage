@@ -14,7 +14,6 @@ import { createClient } from '@/lib/supabase/client'
 interface Class {
   id: string
   name: string
-  description: string
   grade: string
   subject: string
   teacher_id: string
@@ -42,7 +41,6 @@ export default function ClassesPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [newClass, setNewClass] = useState({
     name: '',
-    description: '',
     grade: '',
     subject: ''
   })
@@ -134,7 +132,6 @@ export default function ClassesPage() {
         },
         body: JSON.stringify({
           name: newClass.name,
-          description: newClass.description,
           grade: newClass.grade,
           subject: newClass.subject
         })
@@ -162,7 +159,7 @@ export default function ClassesPage() {
       })
 
       // 폼 초기화 및 목록 새로고침
-      setNewClass({ name: '', description: '', grade: '', subject: '' })
+      setNewClass({ name: '', grade: '', subject: '' })
       setShowCreateForm(false)
       fetchClasses()
 
@@ -293,15 +290,6 @@ export default function ClassesPage() {
                   onChange={(e) => setNewClass({ ...newClass, grade: e.target.value })}
                 />
               </div>
-              <div>
-                <Label htmlFor="description">설명</Label>
-                <Input
-                  id="description"
-                  placeholder="학급에 대한 간단한 설명"
-                  value={newClass.description}
-                  onChange={(e) => setNewClass({ ...newClass, description: e.target.value })}
-                />
-              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={createClass}>학급 생성</Button>
@@ -325,9 +313,7 @@ export default function ClassesPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-lg">{cls.name}</CardTitle>
-                  {cls.description && (
-                    <CardDescription>{cls.description}</CardDescription>
-                  )}
+                  <CardDescription>{cls.grade} - {cls.subject}</CardDescription>
                 </div>
                 <Button
                   variant="ghost"

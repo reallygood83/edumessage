@@ -24,14 +24,12 @@ export async function GET(request: NextRequest) {
         .select(`
           id,
           name,
-          description,
           grade,
           subject,
           class_code,
           teacher_id,
           created_at,
-          updated_at,
-          class_members!inner(count)
+          updated_at
         `)
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false })
@@ -67,7 +65,6 @@ export async function GET(request: NextRequest) {
           classes:class_id (
             id,
             name,
-            description,
             grade,
             subject,
             class_code,
@@ -118,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     // 요청 본문 파싱
     const body = await request.json()
-    const { name, description, grade, subject } = body
+    const { name, grade, subject } = body
 
     if (!name || !grade || !subject) {
       return NextResponse.json({ 
@@ -131,7 +128,6 @@ export async function POST(request: NextRequest) {
       .from('classes')
       .insert({
         name,
-        description: description || '',
         grade,
         subject,
         teacher_id: user.id
